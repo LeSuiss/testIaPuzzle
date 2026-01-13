@@ -1,8 +1,8 @@
 import type { Grid, Piece, PieceRotation } from "./types";
 
-function randomRotation90(): PieceRotation {
+function randomRotation90(rng: () => number): PieceRotation {
   const vals: PieceRotation[] = [0, 90, 180, 270];
-  return vals[Math.floor(Math.random() * vals.length)]!;
+  return vals[Math.floor(rng() * vals.length)]!;
 }
 
 export type GenerateProgress = {
@@ -23,28 +23,39 @@ type EdgeSpec = {
   skewF: number; // légère asymétrie (-1..1)
 };
 
-function rand(min: number, max: number) {
-  return min + Math.random() * (max - min);
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6d2b79f5;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-function buildEdges(grid: Grid) {
+function rand(rng: () => number, min: number, max: number) {
+  return min + rng() * (max - min);
+}
+
+function buildEdges(grid: Grid, rng: () => number) {
   // On stocke aussi des paramètres de forme pour que 2 pièces voisines partagent EXACTEMENT le même emboîtement.
   // vEdges[r][c] = séparation verticale entre (r,c) et (r,c+1)
   const vEdges: EdgeSpec[][] = Array.from({ length: grid.rows }, () =>
     Array.from({ length: Math.max(0, grid.cols - 1) }, () => ({
-      sign: (Math.random() < 0.5 ? 1 : -1) as EdgeType,
-      widthF: rand(0.92, 1.06),
-      neckF: rand(0.90, 1.12),
-      skewF: rand(-1, 1),
+      sign: (rng() < 0.5 ? 1 : -1) as EdgeType,
+      widthF: rand(rng, 0.92, 1.06),
+      neckF: rand(rng, 0.90, 1.12),
+      skewF: rand(rng, -1, 1),
     })),
   );
   // hEdges[r][c] = séparation horizontale entre (r,c) et (r+1,c)
   const hEdges: EdgeSpec[][] = Array.from({ length: Math.max(0, grid.rows - 1) }, () =>
     Array.from({ length: grid.cols }, () => ({
-      sign: (Math.random() < 0.5 ? 1 : -1) as EdgeType,
-      widthF: rand(0.92, 1.06),
-      neckF: rand(0.90, 1.12),
-      skewF: rand(-1, 1),
+      sign: (rng() < 0.5 ? 1 : -1) as EdgeType,
+      widthF: rand(rng, 0.92, 1.06),
+      neckF: rand(rng, 0.90, 1.12),
+      skewF: rand(rng, -1, 1),
     })),
   );
   return { vEdges, hEdges };
@@ -175,17 +186,22 @@ function buildJigsawPath(ctx: CanvasRenderingContext2D, tileW: number, tileH: nu
 export async function generatePieces(
   image: HTMLImageElement,
   grid: Grid,
-  opts: { randomRotation: boolean; onProgress?: (p: GenerateProgress) => void },
+  opts: {
+    randomRotation: boolean;
+    seed: number;
+    outlineColor: string;
+    outlineAlpha?: number;
+    outlineWidth?: number;
+    outlineStrong?: boolean;
+    onProgress?: (p: GenerateProgress) => void;
+  },
 ): Promise<Piece[]> {
   const total = grid.rows * grid.cols;
+  const rng = mulberry32(opts.seed);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas non supporté.");
-
-  const rectCanvas = document.createElement("canvas");
-  const rectCtx = rectCanvas.getContext("2d");
-  if (!rectCtx) throw new Error("Canvas non supporté.");
 
   const naturalW = image.naturalWidth || image.width;
   const naturalH = image.naturalHeight || image.height;
@@ -208,21 +224,13 @@ export async function generatePieces(
   canvas.width = outW;
   canvas.height = outH;
 
-  rectCanvas.width = outTileW;
-  rectCanvas.height = outTileH;
-
   const pieces: Piece[] = [];
   let done = 0;
-  const edges = buildEdges(grid);
+  const edges = buildEdges(grid, rng);
 
   for (let r = 0; r < grid.rows; r++) {
     for (let c = 0; c < grid.cols; c++) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Underlay rectangulaire (sans transparence) exactement sur la case.
-      rectCtx.clearRect(0, 0, rectCanvas.width, rectCanvas.height);
-      rectCtx.drawImage(image, c * tileW, r * tileH, tileW, tileH, 0, 0, outTileW, outTileH);
-      const rectUrl = rectCanvas.toDataURL("image/png");
 
       // 1) Path jigsaw
       const e = pieceEdges(grid, edges, r, c);
@@ -259,14 +267,30 @@ export async function generatePieces(
       ctx.drawImage(image, clampX0, clampY0, realW, realH, -pad + dx, -pad + dy, dw, dh);
       ctx.restore(); // clip
 
+      // Capture version "base" (sans contour) pour underlay anti-jours.
+      const baseUrl = canvas.toDataURL("image/png");
+
       // 3) Contour (look "puzzle physique")
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(255,255,255,0.28)";
+      // Contour très léger: évite une délimitation trop forte entre pièces adjacentes.
+      const baseW = opts.outlineWidth ?? 0.55;
+      const baseA = opts.outlineAlpha ?? 0.16;
+      ctx.strokeStyle = opts.outlineColor;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
       // IMPORTANT: pas de shadow canvas, ça crée un “fond/halo” visible sur les appendices externes.
       // On garde la shadow via CSS `drop-shadow` sur l’<img>, plus propre visuellement.
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
+      if (opts.outlineStrong) {
+        // Double-stroke pour un contour très visible (si besoin).
+        ctx.globalAlpha = Math.min(1, baseA * 0.7);
+        ctx.lineWidth = baseW + 0.8;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = baseA;
+      ctx.lineWidth = baseW;
       ctx.stroke();
+      ctx.globalAlpha = 1;
 
       ctx.restore(); // translate
 
@@ -276,13 +300,13 @@ export async function generatePieces(
         row: r,
         col: c,
         imgUrl,
-        rectUrl,
+        baseUrl,
         outW,
         outH,
         tileW: outTileW,
         tileH: outTileH,
         pad,
-        rotation: opts.randomRotation ? randomRotation90() : 0,
+        rotation: opts.randomRotation ? randomRotation90(rng) : 0,
         placed: false,
       });
 

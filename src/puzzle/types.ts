@@ -7,9 +7,8 @@ export type Piece = {
   row: number;
   col: number;
   imgUrl: string;
-  // Crop rectangulaire (sans transparence) de la tuile, utilisé comme underlay pour éviter
-  // que le background apparaisse aux jonctions (anti-alias des bords).
-  rectUrl: string;
+  // Version sans contour (utile comme underlay légèrement agrandi pour éviter les micro-jours).
+  baseUrl: string;
   // Dimensions (en px) du rendu généré (PNG) incluant un padding pour les ergots/creux.
   outW: number;
   outH: number;
