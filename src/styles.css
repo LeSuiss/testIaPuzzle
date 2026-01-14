@@ -551,6 +551,21 @@ input[type="text"]::placeholder {
   overflow: auto;
 }
 
+.settingsSectionTitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.70);
+  padding: 10px 10px 6px;
+}
+
+.settingsSection + .settingsSection {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
 .settingsRow {
   display: flex;
   align-items: center;

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Sitemap (à adapter à ton domaine en production)
+Sitemap: https://example.com/sitemap.xml
+
+

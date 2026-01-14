@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/puzzle/generatepieces.ts","./src/puzzle/grid.ts","./src/puzzle/hints.ts","./src/puzzle/image.ts","./src/puzzle/types.ts","./src/puzzle/wikimedia.ts","./vite.config.ts"],"version":"5.9.3"}

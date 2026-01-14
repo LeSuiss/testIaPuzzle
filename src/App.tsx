@@ -1456,7 +1456,7 @@ export function App() {
             disabled={!grid || isGenerating}
             title="Zoom par sélection de cases (clique-glisse sur la grille)"
           >
-            Sélection zone
+            Sélectionner une zone de travail
           </button>
           <button
             ref={settingsBtnRef}
@@ -1543,152 +1543,129 @@ export function App() {
               : undefined
           }
         >
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Rotation 90°</div>
-              <div className="hint">Désactivé = toutes les pièces remises à 0°</div>
+          <div className="settingsSection">
+            <div className="settingsSectionTitle">Jeu</div>
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Rotation 90°</div>
+                <div className="hint">Désactivé = toutes les pièces remises à 0°</div>
+              </div>
+              <input type="checkbox" checked={rotationEnabled} onChange={(e) => setRotationEnabled(e.target.checked)} disabled={isGenerating} />
             </div>
-            <input type="checkbox" checked={rotationEnabled} onChange={(e) => setRotationEnabled(e.target.checked)} disabled={isGenerating} />
+
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Aide (zone)</div>
+                <div className="hint">Affiche la zone cible pour la pièce sélectionnée</div>
+              </div>
+              <input type="checkbox" checked={helpEnabled} onChange={(e) => setHelpEnabled(e.target.checked)} disabled={!isReady || isGenerating} />
+            </div>
+
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Niveau d’aide</div>
+                <div className="hint">simple / medium / advanced</div>
+              </div>
+              <select
+                value={helpLevel}
+                onChange={(e) => setHelpLevel(e.target.value as HelpLevel)}
+                disabled={!helpEnabled || !isReady || isGenerating}
+                style={{ width: 140 }}
+              >
+                <option value="simple">simple</option>
+                <option value="medium">medium</option>
+                <option value="advanced">advanced</option>
+              </select>
+            </div>
           </div>
 
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Aide (zone)</div>
-              <div className="hint">Affiche la zone cible pour la pièce sélectionnée</div>
-            </div>
-            <input type="checkbox" checked={helpEnabled} onChange={(e) => setHelpEnabled(e.target.checked)} disabled={!isReady || isGenerating} />
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Niveau d’aide</div>
-              <div className="hint">simple / medium / advanced</div>
-            </div>
-            <select
-              value={helpLevel}
-              onChange={(e) => setHelpLevel(e.target.value as HelpLevel)}
-              disabled={!helpEnabled || !isReady || isGenerating}
-              style={{ width: 140 }}
-            >
-              <option value="simple">simple</option>
-              <option value="medium">medium</option>
-              <option value="advanced">advanced</option>
-            </select>
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Couleur de délimitation</div>
-              <div className="hint">Appliquée en régénérant le rendu (mêmes formes)</div>
-            </div>
-            <input
-              className="colorInput"
-              type="color"
-              value={outlineColor}
-              onChange={(e) => {
-                const c = e.target.value;
-                setOutlineColor(c);
-                void regeneratePieceImages({ outlineColor: c });
-              }}
-              disabled={isGenerating || !grid}
-              title="Couleur du contour"
-            />
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Épaisseur de délimitation</div>
-              <div className="hint">0.5 → 3 px (pas de 0.5)</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="meta" style={{ minWidth: 44, textAlign: "right" }}>
-                {outlineWidth.toFixed(1)}px
+          <div className="settingsSection">
+            <div className="settingsSectionTitle">Contour</div>
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Couleur de délimitation</div>
+                <div className="hint">Appliquée en régénérant le rendu (mêmes formes)</div>
               </div>
               <input
-                type="range"
-                min={0.5}
-                max={3}
-                step={0.5}
-                value={outlineWidth}
+                className="colorInput"
+                type="color"
+                value={outlineColor}
                 onChange={(e) => {
-                  const w = Number(e.target.value);
-                  setOutlineWidth(w);
-                  void regeneratePieceImages({ outlineWidth: w });
+                  const c = e.target.value;
+                  setOutlineColor(c);
+                  void regeneratePieceImages({ outlineColor: c });
                 }}
                 disabled={isGenerating || !grid}
-                title="Épaisseur du contour"
+                title="Couleur du contour"
               />
             </div>
-          </div>
 
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Opacité de délimitation</div>
-              <div className="hint">10% → 100%</div>
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Épaisseur de délimitation</div>
+                <div className="hint">0.5 → 3 px (pas de 0.5)</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="meta" style={{ minWidth: 44, textAlign: "right" }}>
+                  {outlineWidth.toFixed(1)}px
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={3}
+                  step={0.5}
+                  value={outlineWidth}
+                  onChange={(e) => {
+                    const w = Number(e.target.value);
+                    setOutlineWidth(w);
+                    void regeneratePieceImages({ outlineWidth: w });
+                  }}
+                  disabled={isGenerating || !grid}
+                  title="Épaisseur du contour"
+                />
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="meta" style={{ minWidth: 44, textAlign: "right" }}>
-                {Math.round(outlineOpacity * 100)}%
+
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Opacité de délimitation</div>
+                <div className="hint">10% → 100%</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="meta" style={{ minWidth: 44, textAlign: "right" }}>
+                  {Math.round(outlineOpacity * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={outlineOpacity}
+                  onChange={(e) => {
+                    const a = Number(e.target.value);
+                    setOutlineOpacity(a);
+                    void regeneratePieceImages({ outlineOpacity: a });
+                  }}
+                  disabled={isGenerating || !grid}
+                  title="Opacité du contour"
+                />
+              </div>
+            </div>
+
+            <div className="settingsRow">
+              <div className="left">
+                <div className="title">Contour renforcé</div>
+                <div className="hint">Double-stroke pour un contour très visible</div>
               </div>
               <input
-                type="range"
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={outlineOpacity}
+                type="checkbox"
+                checked={outlineStrong}
                 onChange={(e) => {
-                  const a = Number(e.target.value);
-                  setOutlineOpacity(a);
-                  void regeneratePieceImages({ outlineOpacity: a });
+                  const v = e.target.checked;
+                  setOutlineStrong(v);
+                  void regeneratePieceImages({ outlineStrong: v });
                 }}
                 disabled={isGenerating || !grid}
-                title="Opacité du contour"
-              />
-            </div>
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Contour renforcé</div>
-              <div className="hint">Double-stroke pour un contour très visible</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={outlineStrong}
-              onChange={(e) => {
-                const v = e.target.checked;
-                setOutlineStrong(v);
-                void regeneratePieceImages({ outlineStrong: v });
-              }}
-              disabled={isGenerating || !grid}
-            />
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Loupe (zoom local)</div>
-              <div className="hint">Zoom d’une zone du puzzle</div>
-            </div>
-            <input type="checkbox" checked={loupeEnabled} onChange={(e) => setLoupeEnabled(e.target.checked)} disabled={!grid || isGenerating} />
-          </div>
-
-          <div className="settingsRow">
-            <div className="left">
-              <div className="title">Zoom loupe</div>
-              <div className="hint">1.5× → 5×</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="meta" style={{ minWidth: 44, textAlign: "right" }}>
-                {loupeZoom.toFixed(1)}×
-              </div>
-              <input
-                type="range"
-                min={1.5}
-                max={5}
-                step={0.5}
-                value={loupeZoom}
-                onChange={(e) => setLoupeZoom(Number(e.target.value))}
-                disabled={!loupeEnabled || !grid}
               />
             </div>
           </div>
