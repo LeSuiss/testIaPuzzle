@@ -1428,7 +1428,7 @@ export function App() {
 
       <div className="topbar">
         <div className="brand">
-          <h1>Puzzle</h1>
+          <h1>Puzzle </h1>
           <div className="sub">
             {grid ? (
               <>
